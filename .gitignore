@@ -1,0 +1,16 @@
+# dependencies
+node_modules/
+
+# build output
+out/
+out-test/
+
+# packaged artifacts
+*.vsix
+
+# sandbox metadata
+.baidu-cc/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,251 @@
+{
+  "name": "code-notes",
+  "displayName": "CodeNotes 代码笔记",
+  "description": "把个人笔记与 AI 问答对话「贴」在代码上：不污染 git、不修改工程代码，数据存于工程内 .codenotes/ 隐藏目录（可整目录 gitignore）。支持 AI 对话捕捉、行内幽灵注释、侧边栏星标、全局搜索与可扩展的笔记类型注册。",
+  "version": "0.1.0",
+  "publisher": "codenotes",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Notebooks"
+  ],
+  "keywords": [
+    "notes",
+    "annotation",
+    "comment",
+    "gutter",
+    "git",
+    "ai",
+    "笔记",
+    "注释"
+  ],
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./out/extension.js",
+  "icon": "media/logo.png",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codenotes.note.quickAdd",
+        "title": "CodeNotes: 添加笔记（选中代码关联）",
+        "icon": "$(note)"
+      },
+      {
+        "command": "codenotes.note.chatCapture",
+        "title": "CodeNotes: 添加 AI 对话笔记（粘贴对话）",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "codenotes.note.importMd",
+        "title": "CodeNotes: 从 Markdown 文件导入笔记"
+      },
+      {
+        "command": "codenotes.note.open",
+        "title": "CodeNotes: 打开笔记",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "codenotes.note.edit",
+        "title": "CodeNotes: 编辑笔记详情与锚点"
+      },
+      {
+        "command": "codenotes.note.toggleMode",
+        "title": "CodeNotes: 切换显示模式（星标/行内幽灵注释）",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "codenotes.note.move",
+        "title": "CodeNotes: 重新锚定到当前选中代码",
+        "icon": "$(target)"
+      },
+      {
+        "command": "codenotes.note.remove",
+        "title": "CodeNotes: 删除笔记",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "codenotes.anchor.resolveCurrent",
+        "title": "CodeNotes: 解析当前文件中未定位的笔记"
+      },
+      {
+        "command": "codenotes.view.focus",
+        "title": "CodeNotes: 聚焦代码笔记侧边栏",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "codenotes.search",
+        "title": "CodeNotes: 全局搜索笔记",
+        "icon": "$(search)"
+      },
+      {
+        "command": "codenotes.link.copy",
+        "title": "CodeNotes: 复制笔记代码引用链接",
+        "icon": "$(link)"
+      },
+      {
+        "command": "codenotes.storage.addToGitIgnore",
+        "title": "CodeNotes: 将 .codenotes 目录加入 .gitignore"
+      },
+      {
+        "command": "codenotes.storage.showLocation",
+        "title": "CodeNotes: 打开笔记存储目录"
+      },
+      {
+        "command": "codenotes.storage.switchProvider",
+        "title": "CodeNotes: 切换存储模式（工程内 / 全局）"
+      },
+      {
+        "command": "codenotes.export.markdown",
+        "title": "CodeNotes: 导出全部笔记为 Markdown 报告"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codenotes",
+          "title": "CodeNotes 代码笔记",
+          "icon": "media/book.svg"
+        }
+      ]
+    },
+    "views": {
+      "codenotes": [
+        {
+          "id": "codenotes.notesTree",
+          "name": "笔记（按文件）",
+          "icon": "media/book.svg",
+          "contextualTitle": "CodeNotes"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codenotes.note.quickAdd",
+          "group": "1_modification@1"
+        },
+        {
+          "command": "codenotes.note.chatCapture",
+          "group": "1_modification@2"
+        },
+        {
+          "command": "codenotes.note.move",
+          "group": "1_modification@3"
+        },
+        {
+          "command": "codenotes.link.copy",
+          "group": "2_copy@1"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "codenotes.note.quickAdd",
+          "when": "view == codenotes.notesTree",
+          "group": "navigation@1"
+        },
+        {
+          "command": "codenotes.search",
+          "when": "view == codenotes.notesTree",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "codenotes.note.open",
+          "when": "view == codenotes.notesTree",
+          "group": "inline@1"
+        },
+        {
+          "command": "codenotes.note.edit",
+          "when": "view == codenotes.notesTree",
+          "group": "inline@2"
+        },
+        {
+          "command": "codenotes.note.toggleMode",
+          "when": "view == codenotes.notesTree",
+          "group": "inline@3"
+        },
+        {
+          "command": "codenotes.note.move",
+          "when": "view == codenotes.notesTree",
+          "group": "inline@4"
+        },
+        {
+          "command": "codenotes.note.remove",
+          "when": "view == codenotes.notesTree",
+          "group": "inline@5"
+        },
+        {
+          "command": "codenotes.link.copy",
+          "when": "view == codenotes.notesTree",
+          "group": "inline@6"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CodeNotes",
+      "properties": {
+        "codenotes.storage.mode": {
+          "type": "string",
+          "enum": [
+            "workspace",
+            "global"
+          ],
+          "default": "workspace",
+          "description": "笔记存储位置：workspace=工程内 .codenotes/ 目录（需 gitignore，推荐）；global=用户全局目录（工程零写入，git 完全无感）"
+        },
+        "codenotes.display.inlinePreview": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否在代码行尾显示行内幽灵注释（纯渲染，不落盘，不影响 git）"
+        },
+        "codenotes.display.inlineMaxLength": {
+          "type": "number",
+          "default": 40,
+          "description": "行内幽灵注释最多显示的字符数"
+        },
+        "codenotes.display.showGutterStar": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否在代码行号旁显示星标（按笔记类型着色）"
+        },
+        "codenotes.display.highlightAnchoredLines": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否以浅色高亮有笔记的代码行"
+        },
+        "codenotes.anchor.searchWindow": {
+          "type": "number",
+          "default": 200,
+          "description": "代码变动后自动寻找锚点时在此行数窗口内搜索"
+        },
+        "codenotes.export.reportTitle": {
+          "type": "string",
+          "default": "CodeNotes 代码笔记导出",
+          "description": "导出 markdown 报告的标题"
+        },
+        "codenotes.quote.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "笔记/导出中是否附带锚定代码片段引用（便于回忆上下文）"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && tsc -p tsconfig.test.json && node --test \"out-test/test/*.test.js\"",
+    "package": "npm run compile && vsce package -o codenotes-0.1.0.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0",
+    "@vscode/vsce": "^2.26.0"
+  }
+}
