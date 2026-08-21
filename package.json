@@ -2,7 +2,7 @@
   "name": "code-notes",
   "displayName": "CodeNotes 代码笔记",
   "description": "把个人笔记与 AI 问答对话「贴」在代码上：不污染 git、不修改工程代码，数据存于工程内 .codenotes/ 隐藏目录（可整目录 gitignore）。支持 AI 对话捕捉、行内幽灵注释、侧边栏星标、全局搜索与可扩展的笔记类型注册。",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "codenotes",
   "license": "MIT",
   "engines": {
@@ -87,6 +87,10 @@
         "icon": "$(link)"
       },
       {
+        "command": "codenotes.note.revealAnchor",
+        "title": "CodeNotes: 跳转到锚点代码"
+      },
+      {
         "command": "codenotes.storage.addToGitIgnore",
         "title": "CodeNotes: 将 .codenotes 目录加入 .gitignore"
       },
@@ -122,24 +126,24 @@
         }
       ]
     },
+    "submenus": [
+      {
+        "id": "codenotes.submenu",
+        "label": "CodeNotes"
+      }
+    ],
     "menus": {
       "editor/context": [
         {
-          "command": "codenotes.note.quickAdd",
-          "group": "1_modification@1"
-        },
-        {
-          "command": "codenotes.note.chatCapture",
-          "group": "1_modification@2"
-        },
-        {
-          "command": "codenotes.note.move",
-          "group": "1_modification@3"
-        },
-        {
-          "command": "codenotes.link.copy",
-          "group": "2_copy@1"
+          "submenu": "codenotes.submenu",
+          "group": "100_codenotes@100"
         }
+      ],
+      "codenotes.submenu": [
+        { "command": "codenotes.note.quickAdd", "group": "create@1" },
+        { "command": "codenotes.note.chatCapture", "group": "create@2" },
+        { "command": "codenotes.note.move", "group": "anchor@1" },
+        { "command": "codenotes.link.copy", "group": "tools@1" }
       ],
       "view/title": [
         {
@@ -223,24 +227,25 @@
           "default": 200,
           "description": "代码变动后自动寻找锚点时在此行数窗口内搜索"
         },
-        "codenotes.export.reportTitle": {
-          "type": "string",
-          "default": "CodeNotes 代码笔记导出",
-          "description": "导出 markdown 报告的标题"
-        },
         "codenotes.quote.enabled": {
           "type": "boolean",
           "default": true,
           "description": "笔记/导出中是否附带锚定代码片段引用（便于回忆上下文）"
         }
       }
-    }
+    },
+    "keybindings": [
+      { "command": "codenotes.note.quickAdd", "key": "ctrl+k n q", "mac": "cmd+k n q" },
+      { "command": "codenotes.note.chatCapture", "key": "ctrl+k n c", "mac": "cmd+k n c" },
+      { "command": "codenotes.note.move", "key": "ctrl+k n r", "mac": "cmd+k n r" },
+      { "command": "codenotes.search", "key": "ctrl+k n s", "mac": "cmd+k n s" }
+    ]
   },
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && tsc -p tsconfig.test.json && node --test \"out-test/test/*.test.js\"",
-    "package": "npm run compile && vsce package -o codenotes-0.1.0.vsix"
+    "package": "npm run compile && vsce package -o codenotes-${npm_package_version}.vsix"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

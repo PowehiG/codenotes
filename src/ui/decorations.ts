@@ -76,16 +76,9 @@ export class NoteDecorator {
           arr = [];
           stars.set(key, arr);
         }
-        const noteReference = new vscode.MarkdownString();
-        noteReference.appendMarkdown(
-          `${this.kindOf(n).emoji ?? ''} **${escapeTitle(n.title)}**\n\n` +
-            (a.status === 'unresolved' ? '_⚠️ 代码漂移后未定位，点击行内命令重新锚定_\n\n' : '') +
-            `[打开笔记](command:codenotes.note.open?${encodeURIComponent(JSON.stringify([n.id]))}) · ` +
-            `[编辑](command:codenotes.note.edit?${encodeURIComponent(JSON.stringify([n.id]))}) · ` +
-            `[移动锚点](command:codenotes.note.move?${encodeURIComponent(JSON.stringify([n.id]))})`
-        );
-        noteReference.isTrusted = true;
-        arr.push({ range: lineRange, hoverMessage: noteReference });
+        // 不再为 gutter 星标单独附加 hoverMessage，避免与 registerNoteHover
+        // 的文档级悬停重复弹出；所有笔记详情统一在代码行悬停查看。
+        arr.push({ range: lineRange });
       }
 
       if (wantInline && (n.mode === 'inline' || n.mode === 'both')) {

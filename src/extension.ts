@@ -41,7 +41,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<CodeNo
   const webview = new NoteWebview(core, {
     openNoteInEditor: (id) => revealNote(core, id),
     onSaved: () => refreshAll(),
-    onRemoved: () => refreshAll(),
+    onRemoved: async (id) => {
+      const note = core.getNote(id);
+      if (!note) return false;
+      const ans = await vscode.window.showWarningMessage(
+        `确定要删除「${note.title}」吗？`,
+        { modal: true },
+        '删除',
+        '取消'
+      );
+      if (ans !== '删除') return false;
+      await core.removeNote(id);
+      refreshAll();
+      vscode.window.showInformationMessage(`已删除：${note.title}`);
+      return true;
+    },
+    storageRoot: () => storage.root,
   });
 
   /** 全局刷新回调（命令层每次改动后调用） */

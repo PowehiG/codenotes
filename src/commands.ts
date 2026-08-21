@@ -164,11 +164,17 @@ export function registerCommands(ctx: Ctx): vscode.Disposable[] {
 
   /* ================= 锚点/定位类 ================= */
 
-  function openNote(noteId?: string): void {
+  /** 打开笔记对应的 Markdown 文件（用 VSCode Markdown Preview；失败则普通编辑器预览） */
+  async function openNote(noteId?: string): Promise<void> {
     const id = resolveNoteId(ctx.core, noteId, vscode.window.activeTextEditor);
-    if (id) {
-      revealNote(id);
-      ctx.webview.open('focus', id);
+    const note = id ? core.getNote(id) : undefined;
+    if (!note) return;
+    try {
+      const mdPath = path.join(ctx.storageRoot(), note.body);
+      await openMarkdownPreview(mdPath);
+    } catch (e: any) {
+      // fallback: 打开插件自带的聚焦视图
+      ctx.webview.open('focus', note.id);
     }
   }
 
@@ -213,16 +219,21 @@ export function registerCommands(ctx: Ctx): vscode.Disposable[] {
     vscode.window.showInformationMessage('CodeNotes：笔记已重新锚定到当前代码');
   }
 
+  /** 删除笔记（先弹 VSCode 确认，比 webview 原生的 confirm() 更稳定） */
   async function removeNote(noteId?: string): Promise<void> {
     const id = resolveNoteId(ctx.core, noteId);
     const note = id ? core.getNote(id) : undefined;
     if (!note) return;
-    const ans = await vscode.window.showQuickPick(['删除', '取消'], {
-      placeHolder: `确认删除「${note.title}」？（正文 md 一并删除，不可恢复）`,
-    });
+    const ans = await vscode.window.showWarningMessage(
+      `确定要删除「${note.title}」吗？`,
+      { modal: true },
+      '删除',
+      '取消'
+    );
     if (ans !== '删除') return;
     await core.removeNote(note.id);
     ctx.refresh();
+    vscode.window.showInformationMessage(`已删除：${note.title}`);
   }
 
   /** 手动触发当前文件锚点重扫（代码改动后笔记没有跟上前可用） */
@@ -243,13 +254,24 @@ export function registerCommands(ctx: Ctx): vscode.Disposable[] {
     if (!abs) return;
     void (async () => {
       const doc = await vscode.workspace.openTextDocument(abs);
-      const ed = await vscode.window.showTextDocument(doc);
+      const ed = await vscode.window.showTextDocument(doc, { preview: true });
       const a = note.anchor!;
       const last = Math.min(a.end, ed.document.lineCount - 1);
       const range = new vscode.Range(a.start, 0, last, ed.document.lineAt(last).text.length);
       ed.selection = new vscode.Selection(range.start, range.end);
       ed.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
     })();
+  }
+
+  async function openMarkdownPreview(mdPath: string): Promise<void> {
+    const uri = vscode.Uri.file(path.resolve(ctx.storageRoot(), mdPath));
+    try {
+      // 在侧栏打开 MD 渲染预览，不占用当前源码所在的编辑器栏
+      await vscode.commands.executeCommand('markdown.showPreviewToSide', uri);
+    } catch {
+      const doc = await vscode.workspace.openTextDocument(uri);
+      await vscode.window.showTextDocument(doc, { preview: true, viewColumn: vscode.ViewColumn.Beside });
+    }
   }
 
   /* ================= 视图/搜索类 ================= */
@@ -379,6 +401,7 @@ export function registerCommands(ctx: Ctx): vscode.Disposable[] {
   reg('codenotes.note.chatCapture', chatCapture);
   reg('codenotes.note.importMd', importMd);
   reg('codenotes.note.open', (id?: string) => openNote(id));
+  reg('codenotes.note.revealAnchor', (id?: string) => revealNote(id ?? ''));
   reg('codenotes.note.edit', (id?: string) => editNote(id));
   reg('codenotes.note.toggleMode', (id?: string) => toggleMode(id));
   reg('codenotes.note.move', (id?: string) => moveNote(id));

@@ -6,6 +6,7 @@
  * 安全：所有 markdown 先 HTML 转义再渲染；链接仅放行 http(s) 外部链接与的内置按钮。
  */
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { NotesCore } from '../core/notesCore';
 import { absUriOf } from '../util/ws';
 
@@ -71,7 +72,8 @@ export class NoteWebview {
     private readonly hooks: {
       openNoteInEditor: (noteId: string) => void;
       onSaved: (noteId: string) => void;
-      onRemoved: (noteId: string) => void;
+      onRemoved: (noteId: string) => Promise<boolean> | boolean;  // 返回 true=已确认删除
+      storageRoot: () => string;
     }
   ) {}
 
@@ -156,12 +158,14 @@ export class NoteWebview {
         if (typeof p.mode === 'string' && ['star', 'inline', 'both'].includes(p.mode)) note.mode = p.mode;
         if (Array.isArray(p.tags)) note.tags = p.tags;
         await this.core.updateNote(note, typeof p.body === 'string' ? p.body : undefined);
+        vscode.window.showInformationMessage('保存成功');
+        await this.panel.webview.postMessage({ type: 'saved' });
         this.hooks.onSaved(note.id);
         await this.pushInit();
         break;
       }
       case 'openFile':
-        this.hooks.openNoteInEditor(note.id);
+        this.openMarkdownPreviewOfNote(note);
         break;
       case 'editor':
         this.current = { view: 'editor', noteId: note.id };
@@ -172,13 +176,26 @@ export class NoteWebview {
         await this.core.clearAnchor(note.id);
         await this.pushInit();
         break;
-      case 'remove':
-        await this.core.removeNote(note.id);
-        this.hooks.onRemoved(note.id);
-        this.panel?.dispose();
+      case 'remove': {
+        // 删除确认放到主进程侧处理，避免 webview confirm() 在部分环境被拦截无响应
+        const confirmed = await this.hooks.onRemoved(note.id);
+        if (confirmed) this.panel?.dispose();
         break;
+      }
       default:
         break;
+    }
+  }
+
+  private async openMarkdownPreviewOfNote(note: import('../types').Note): Promise<void> {
+    const mdPath = path.join(this.hooks.storageRoot(), note.body);
+    const uri = vscode.Uri.file(path.resolve(mdPath));
+    try {
+      // 在侧栏打开 MD 渲染预览，不占用当前源码所在的编辑器栏
+      await vscode.commands.executeCommand('markdown.showPreviewToSide', uri);
+    } catch {
+      const doc = await vscode.workspace.openTextDocument(uri);
+      await vscode.window.showTextDocument(doc, { preview: true, viewColumn: vscode.ViewColumn.Beside });
     }
   }
 
@@ -328,7 +345,7 @@ ${MD_RENDER_JS}
       }});
     };
     bar.appendChild(saveBtn);
-    var openBtn = el('button','btn sec'); openBtn.textContent = '在编辑器中打开';
+    var openBtn = el('button','btn sec'); openBtn.textContent = '打开 Markdown 预览';
     openBtn.onclick = function(){ vsc.postMessage({ type: 'openFile' }); };
     bar.appendChild(openBtn);
     var sp = el('span','spacer'); bar.appendChild(sp);
@@ -338,9 +355,7 @@ ${MD_RENDER_JS}
       bar.appendChild(unBtn);
     }
     var delBtn = el('button','btn danger'); delBtn.textContent = '删除';
-    delBtn.onclick = function(){
-      if (confirm('删除该笔记？（正文 md 一并删除）')) vsc.postMessage({ type: 'remove' });
-    };
+    delBtn.onclick = function(){ vsc.postMessage({ type: 'remove' }); };
     bar.appendChild(delBtn);
     app.appendChild(bar);
   }
@@ -358,7 +373,7 @@ ${MD_RENDER_JS}
     editBtn.onclick = function(){ vsc.postMessage({ type: 'editor' }); };
     bar.appendChild(editBtn);
     if (state.anchor) {
-      var openBtn = el('button','btn sec'); openBtn.textContent = '在编辑器中打开代码';
+      var openBtn = el('button','btn sec'); openBtn.textContent = '打开 Markdown 预览';
       openBtn.onclick = function(){ vsc.postMessage({ type: 'openFile' }); };
       bar.appendChild(openBtn);
     }
